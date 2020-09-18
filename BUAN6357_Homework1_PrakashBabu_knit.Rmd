@@ -1,0 +1,177 @@
+---
+title: 'Arima Model Analysis : Wmurders'
+author: "Priyanka Prakash Babu"
+date: "6/23/2020"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(fpp2, urca)
+```
+
+```{r, include=FALSE}
+options(tinytex.verbose = TRUE)
+```
+
+```{r loading data set}
+
+data(wmurders)
+
+```
+
+```{r}
+autoplot(wmurders) + ylab("Number of females murdered") + xlab("Year") + ggtitle("Annual female murder rate")
+```
+
+```{r}
+autoplot(diff(wmurders)) + ylab("Number of females murdered") + xlab("Year") + ggtitle("Annual female murder rate")
+```
+
+```{r KPSS test}
+
+library(urca)
+summary(ur.kpss(wmurders))
+
+```
+
+```{r ndiff1}
+
+ndiffs(wmurders)
+wmurders %>% diff() %>% ur.kpss() %>% summary()
+
+```
+
+```{r ndiff2}
+
+ndiffs(wmurders)
+wmurders %>% diff() %>% ur.kpss() %>% summary()
+
+```
+
+```{r ACF plot}
+
+ggAcf(wmurders)
+
+```
+
+```{r diff ACF plot}
+
+ggAcf(diff(wmurders))
+
+```
+
+```{r checking PACF}
+
+ggPacf(diff(wmurders),main ="")
+
+```
+
+```{r auto.arima}
+
+(fit1 <- auto.arima(wmurders, seasonal = FALSE))
+fit1 %>% forecast(h=10) %>% autoplot(include=80)
+
+```
+
+#Case1 Arima
+```{r Arima1}
+
+(fit2 <-Arima(wmurders, order = c(0,1,0))) 
+
+```
+
+#Case2 Arima
+```{r Arima2a}
+
+(fit3 <-Arima(wmurders, order = c(2,1,2))) 
+
+```
+#Case2 with constant
+```{r Arima2b}
+
+
+(fit3 <-Arima(wmurders, order = c(2,1,2),include.drift = TRUE))
+fit3 %>% forecast(h=10) %>% autoplot(include=80)
+
+
+```
+
+
+```{r auto.arima restrictions}
+
+(fit4 <- auto.arima(wmurders, stepwise = FALSE, approximation = FALSE, seasonal = FALSE))
+fit4 %>% forecast(h=10) %>% autoplot(include=80)
+
+```
+
+```{r residual check}
+
+checkresiduals(fit3)
+
+```
+
+```{r forecast1}
+
+fit3 %>% forecast %>% autoplot()
+
+```
+
+```{r forecast2}
+
+forecast(fit3, h= 3)
+
+```
+
+Question 1:
+Ans: For modeling with ARIMA, our first step would be to plot the data to identify any unusual observation. 
+a)After applying "autoplot", it can be observed that there is a trend demonstrated in positive and negative with constant variance. Hence it can be concluded that data is not stationary.
+b)on applying ACF and PACF plots, it can be observed that there are significant spikes above the blue lines, i.e outside the 95% confidence interval.
+c)to convert the data to stationary, first differencing is done, ACF and PACF is plotted for first difference. The plots indicates that the data is stationary now, with 1 spike outside 95%(can be ignored).
+d)Now, we can perform Arima model. We have 2 cases:
+case1- Arima model with (2,1,2), after inspection, we see that still there is 1 spike at the 2nd lag. 
+case2- Arima model with (0,1,0) gives lower AICc value than case1 model but, when we check the residuals there is still 1 spike outside 95%. 
+We can consider Arima(2,1,2) as the better model as it doesn't have any spike outside 95% when checked with residuals.
+Also as mentioed in the question it's suggested if there are two equally likely candidate models, then choose the one with a moving average process. 
+
+Question 2 :
+Ans: After calculating the AICc value for the model(2,1,2) we can notice that the AICc value with constant is -9.93 and the AICc value without constant is -12.46. Since lower AICc value is preferred for the model, we don't add any constant.
+
+Question 3 :
+Ans : Tried 4 ways to fit the model :  
+Arima(1,2,1), Arima(0,1,0) without constant, Arima(0,1,0) with constant, auto.arima(0,2,3) 
+After doing check.residuals(), it can be noticed that there is no spike above 95% confidence interval for the model Arima(0,1,0) without constant. Hence, indicates that the data is in white noise. Yes, the data is satisfactory.
+
+Question 4 :
+Ans : With h=3, the plots and forecast results has been shown in the above code
+
+Question 5 :
+Ans : auto.arima() has been implemented with and without restrictions. 
+With restriction it gives the model Arima(1,2,1) with AICc value as -6.39 & without restriction it gives Arima(0,2,3) with AICc value -6.7. 
+But when we tried with several different values of p&q after interpreting from plots, Arima(2,1,2) performs the best with 0 outliers while checking the residuals. According to me Arima(2,1,2) performs better.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
